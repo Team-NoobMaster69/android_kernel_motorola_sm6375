@@ -7830,6 +7830,7 @@ static int ipa3_pre_init(const struct ipa3_plat_drv_res *resource_p,
 		goto fail_device_create;
 	}
 
+#ifndef CONFIG_DISABLE_IPA_WAKELOCKS
 	/* Register a wakeup source. */
 	ipa3_ctx->w_lock =
 		wakeup_source_register(&ipa_pdev->dev, "IPA_WS");
@@ -7839,6 +7840,7 @@ static int ipa3_pre_init(const struct ipa3_plat_drv_res *resource_p,
 		goto fail_w_source_register;
 	}
 	spin_lock_init(&ipa3_ctx->wakelock_ref_cnt.spinlock);
+#endif
 
 	/* Initialize Power Management framework */
 	result = ipa_pm_init(&ipa3_res.pm_init);
@@ -7953,11 +7955,13 @@ fail_gsi_pre_fw_load_init:
 	ipa3_dma_shutdown();
 fail_ipa_dma_setup:
 	ipa_pm_destroy();
-fail_w_source_register:
-	device_destroy(ipa3_ctx->cdev.class, ipa3_ctx->cdev.dev_num);
 fail_ipa_pm_init:
+#ifndef CONFIG_DISABLE_IPA_WAKELOCKS
 	wakeup_source_unregister(ipa3_ctx->w_lock);
 	ipa3_ctx->w_lock = NULL;
+fail_w_source_register:
+#endif
+	device_destroy(ipa3_ctx->cdev.class, ipa3_ctx->cdev.dev_num);
 fail_device_create:
 	unregister_chrdev_region(ipa3_ctx->cdev.dev_num, 1);
 fail_alloc_chrdev_region:
